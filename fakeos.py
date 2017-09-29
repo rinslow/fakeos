@@ -35,3 +35,10 @@ class FakeOS(object):
     def chdir(self, path: str):
         """Change the current working directory to path."""
         self.cwd = Path(path)
+
+    def listdir(self, path: str) -> list:
+        """Return a list containing the names of the entries in the directory
+        given by path. The list is in arbitrary order, and does not include the
+        special entries '.' and '..' even if they are present in the
+        directory."""
+        return list(self.filesystem.listdir(Path(path)))

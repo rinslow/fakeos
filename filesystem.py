@@ -2,19 +2,35 @@
 from pathlib import Path
 
 
-class FakeFile(object):
+class FakeFileLikeObject(object):
+    """I am what's common between a file, a directory, a symlink and a mount."""
+    def __init__(self, path: Path):
+        self.path = path
+
+    @property
+    def parent(self) -> Path:
+        """Return this file-like object's parent."""
+        return self.path.parent
+
+    @property
+    def name(self) -> str:
+        """Return this file-like object's name"""
+        return self.path.absolute().name
+
+
+class FakeFile(FakeFileLikeObject):
     """I mock a file"""
     # pylint: disable=too-few-public-methods
     def __init__(self, path: Path, mode: int = 0o77):
-        self.path = path
+        super(FakeFile, self).__init__(path=path)
         self.mode = mode
 
 
-class FakeDirectory(object):
+class FakeDirectory(FakeFileLikeObject):
     """I mock a directory."""
     # pylint: disable=too-few-public-methods
     def __init__(self, path: Path, mode: int = 0o777):
-        self.path = path
+        super(FakeDirectory, self).__init__(path=path)
         self.mode = mode
 
 
@@ -38,3 +54,9 @@ class FakeFilesystem(object):
         """Whether or not path already exists"""
         return any([path.absolute() in (d.path.absolute() for d in self.directories),
                     path.absolute() in (f.path.absolute() for f in self.files)])
+
+    def listdir(self, path: Path) -> list:
+        """List all files in a directory"""
+        for file_object in self.files + self.directories:
+            if file_object.parent.absolute() == path.absolute():
+                yield file_object.name
