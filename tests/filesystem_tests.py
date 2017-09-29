@@ -44,3 +44,17 @@ class DirectoryCase(TestCase):
 
         assert os.filesystem.has(Path("/" + dir + "/" + _file))
 
+    @given(text())
+    def test_mkdir_works(self, directory_name):
+        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        assume("/" not in directory_name)
+        assume(directory_name not in (".", "..", ""))
+        os.mkdir("/" + directory_name)
+
+
+class CurrentDirectoryCase(TestCase):
+    @given(text())
+    def test_change_dir(self, path):
+        os = FakeOS()
+        os.chdir(path)
+        assert os.getcwd() == str(Path(path).absolute())

@@ -7,8 +7,11 @@ from filesystem import FakeFilesystem
 class FakeOS(object):
     """I mock the 'os' module"""
     # pylint: disable=too-few-public-methods
-    def __init__(self, filesystem: FakeFilesystem = None):
+    def __init__(self,
+                 filesystem: FakeFilesystem = None,
+                 cwd: Path = None):
         self.filesystem = filesystem or FakeFilesystem()
+        self.cwd = cwd or Path(__file__)
 
     def mkdir(self, path: str, mode: int = 0o777):
         """Create a directory named path with numeric mode mode.
@@ -24,3 +27,11 @@ class FakeOS(object):
         On some platforms, they are ignored and you should call chmod()
         explicitly to set them."""
         self.filesystem.mkdir(Path(path), mode=mode)
+
+    def getcwd(self) -> str:
+        """"Return a string representing the current working directory."""
+        return str(self.cwd.absolute())
+
+    def chdir(self, path: str):
+        """Change the current working directory to path."""
+        self.cwd = Path(path)
