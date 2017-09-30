@@ -10,6 +10,7 @@ class FakeOS(object):
     def __init__(self,
                  filesystem: FakeFilesystem = None,
                  cwd: Path = None):
+
         self.filesystem = filesystem or FakeFilesystem()
         self.cwd = cwd or Path(__file__)
 
@@ -33,7 +34,15 @@ class FakeOS(object):
         return str(self.cwd.absolute())
 
     def chdir(self, path: str):
-        """Change the current working directory to path."""
+        """Change the current working directory to path.
+        If the directory does not exist FileNotFound is raised.
+        If the file is not a directory, NotADirectory is raised."""
+        if not self.filesystem.has(Path(path)):
+            raise FileNotFoundError(path)
+
+        if self.filesystem.has_file(Path(path)):
+            raise NotADirectoryError(path)
+
         self.cwd = Path(path)
 
     def listdir(self, path: str) -> list:

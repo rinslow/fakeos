@@ -40,22 +40,34 @@ class FakeFilesystem(object):
         self.directories = directories or list()
         self.files = files or list()
 
+    @property
+    def curdir(self):
+        """Return a path representing the current directory."""
+        return Path(".")
+
     def mkdir(self, path: Path, mode: int = 0o777):
         """Create an empty directory."""
         if self.has(path):
             raise FileExistsError
 
-        if not self.has(path.parent):
+        if path.parent != self.curdir and not self.has(path.parent):
             raise FileNotFoundError
 
         self.directories.append(FakeDirectory(path, mode))
 
     def has(self, path) -> bool:
         """Whether or not path already exists"""
-        return any([path.absolute() in (d.path.absolute() for d in self.directories),
-                    path.absolute() in (f.path.absolute() for f in self.files)])
+        return self.has_directory(path) or self.has_file(path)
 
-    def listdir(self, path: Path) -> list:
+    def has_directory(self, path) -> bool:
+        """Whether or not such a directory exists."""
+        return path.absolute() in (d.path.absolute() for d in self.directories)
+
+    def has_file(self, path) -> bool:
+        """Whether or not such a file exists."""
+        return path.absolute() in (f.path.absolute() for f in self.files)
+
+    def listdir(self, path: Path) -> [str]:
         """List all files in a directory"""
         for file_object in self.files + self.directories:
             if file_object.parent.absolute() == path.absolute():
