@@ -16,7 +16,8 @@ class DirectoryCase(TestCase):
         assume("/" not in directory)
         assume(directory not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
         os.mkdir("/" + directory)
 
         with self.assertRaises(FileExistsError):
@@ -27,7 +28,8 @@ class DirectoryCase(TestCase):
         assume("/" not in directory)
         assume(directory not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
 
         with self.assertRaises(FileNotFoundError):
             os.mkdir("/hello/" + directory)
@@ -40,7 +42,8 @@ class DirectoryCase(TestCase):
         assume("/" not in _file)
         assume(_file not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
         os.mkdir("/" + directory)
         os.mkdir("/" + directory + "/" + _file)
 
@@ -48,7 +51,8 @@ class DirectoryCase(TestCase):
 
     @given(text())
     def test_mkdir_works(self, directory):
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
         assume("/" not in directory)
         assume(directory not in self.ILLEGAL_DIRECTORY_NAMES)
         os.mkdir("/" + directory)
@@ -62,7 +66,8 @@ class DirectoryCase(TestCase):
             assume(subdirectory not in self.ILLEGAL_DIRECTORY_NAMES)
             assume("/" not in subdirectory)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
         os.mkdir("/" + directory)
 
         for subdirectory in subdirectories:
@@ -75,7 +80,8 @@ class DirectoryCase(TestCase):
         assume("/" not in directory)
         assume(directory not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
 
         os.mkdir("/" + directory)
 
@@ -88,12 +94,13 @@ class DirectoryCase(TestCase):
         assume("/" not in filename)
         assume(filename not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))],
-                                   files=[FakeFile(Path("/" +
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))],
+                                      files=[FakeFile(Path("/" +
                                                         directory +
                                                         "/" +
                                                         filename))]
-                                   ))
+                                      ))
 
         os.mkdir("/" + directory)
 
@@ -111,12 +118,13 @@ class DirectoryCase(TestCase):
         assume("/" not in subdirectory)
         assume(subdirectory not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(directories=[FakeDirectory(Path("/"))],
-                                   files=[FakeFile(Path("/" +
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))],
+                                      files=[FakeFile(Path("/" +
                                                         directory +
                                                         "/" +
                                                         filename))]
-                                   ))
+                                      ))
 
         os.mkdir("/" + directory)
         os.mkdir("/" + directory + "/" + subdirectory)
@@ -151,6 +159,6 @@ class CurrentDirectoryCase(TestCase):
         assume("/" not in path)
         assume(path not in self.ILLEGAL_DIRECTORY_NAMES)
 
-        os = FakeOS(FakeFilesystem(files=[FakeFile(Path(path))]))
+        os = FakeOS(filesystem=FakeFilesystem(files=[FakeFile(Path(path))]))
         with self.assertRaises(NotADirectoryError):
             os.chdir(path)

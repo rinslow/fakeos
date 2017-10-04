@@ -1,18 +1,20 @@
 """Full mock of the builtin 'os' module for blazing-fast unit-testing."""
 from pathlib import Path
 
+from environment import FakeEnvironment
 from filesystem import FakeFilesystem
 
 
 class FakeOS(object):
     """I mock the 'os' module"""
     # pylint: disable=too-few-public-methods
-    def __init__(self,
+    def __init__(self, cwd: Path = None,
                  filesystem: FakeFilesystem = None,
-                 cwd: Path = None):
+                 environment: FakeEnvironment = None):
 
-        self.filesystem = filesystem or FakeFilesystem()
         self.cwd = cwd or Path(__file__)
+        self.filesystem = filesystem or FakeFilesystem()
+        self.environment = environment or FakeEnvironment()
 
     def mkdir(self, path: str, mode: int = 0o777):
         """Create a directory named path with numeric mode mode.
@@ -51,3 +53,13 @@ class FakeOS(object):
         special entries '.' and '..' even if they are present in the
         directory."""
         return list(self.filesystem.listdir(Path(path)))
+
+    def environ(self) -> dict:
+        """A dictionary representing the string environment.
+        For example, environ['HOME'] is the pathname of your home directory
+        (on some platforms), and is equivalent to getenv("HOME") in C.
+        This mapping is captured the first time the os module is imported,
+        typically during Python startup as part of processing site.py.
+        Changes to the environment made after this time are not reflected in
+        os.environ, except for changes made by modifying os.environ directly."""
+        return self.environment
