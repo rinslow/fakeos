@@ -62,4 +62,9 @@ class FakeOS(object):
         typically during Python startup as part of processing site.py.
         Changes to the environment made after this time are not reflected in
         os.environ, except for changes made by modifying os.environ directly."""
-        return self.environment
+        return self.environment.environ()
+
+    def getenv(self, key: str, default: str = None) -> str:
+        """Return the value of the environment variable key if it exists,
+        or default if it doesn’t. key, default and the result are str."""
+        return self.environment.getenv(key, default)

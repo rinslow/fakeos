@@ -14,6 +14,18 @@ class EnvironmentTest(TestCase):
 
     @given(text(), text())
     def test_environ_getting_existing_variable(self, variable, value):
-        os = FakeOS(environment=FakeEnvironment({variable: value}))
+        os = FakeOS(environment=FakeEnvironment(keys={variable: value}))
 
         assert os.environ()[variable] == value
+
+    @given(text(), text())
+    def test_get_env_when_variable_does_not_exist(self, variable, default):
+        os = FakeOS()
+
+        assert os.getenv(variable, default) == default
+
+    @given(text(), text())
+    def test_get_env_when_variable_exists(self, variable, value):
+        os = FakeOS(environment=FakeEnvironment(keys={variable: value}))
+
+        assert os.getenv(variable) == value
