@@ -29,3 +29,10 @@ class EnvironmentTest(TestCase):
         os = FakeOS(environment=FakeEnvironment(keys={variable: value}))
 
         assert os.getenv(variable) == value
+
+    @given(text(), text())
+    def test_putenv_and_then_getenv(self, variable, value):
+        os = FakeOS()
+        os.putenv(variable, value)
+
+        assert os.getenv(variable) == value

@@ -68,3 +68,16 @@ class FakeOS(object):
         """Return the value of the environment variable key if it exists,
         or default if it doesn’t. key, default and the result are str."""
         return self.environment.getenv(key, default)
+
+    def putenv(self, key: str, value: str):
+        """Set the environment variable named key to the string value.
+        Such changes to the environment affect subprocesses started with
+        os.system(), popen() or fork() and execv().
+        Availability: most flavors of Unix, Windows.
+
+        Note:
+             On some platforms, including FreeBSD and Mac OS X, setting
+             environ may cause memory leaks. Refer to the system documentation
+             for putenv.
+        """
+        self.environment.putenv(key, value)

@@ -26,3 +26,7 @@ class FakeEnvironment(object):
         """Return environment variable if it exists, otherwise return
         default."""
         return self.keys.get(key, default)
+
+    def putenv(self, key: str, value: str):
+        """Add an environment variable."""
+        self.keys[key] = value
