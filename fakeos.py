@@ -81,3 +81,13 @@ class FakeOS(object):
              for putenv.
         """
         self.environment.putenv(key, value)
+
+    def makedirs(self, name, mode: int = 0o77, exist_ok: bool = False):
+        """Recursive directory creation function.
+        Like mkdir(), but makes all intermediate-level directories needed
+        to contain the leaf directory. The mode parameter is passed to mkdir()
+        see the mkdir() description for how it is interpreted.
+        If exist_ok is False (the default), an OSError is raised if the
+        target directory already exists.
+         """
+        self.filesystem.makedirs(Path(name), mode=mode, exist_ok=exist_ok)

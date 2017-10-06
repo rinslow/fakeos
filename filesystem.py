@@ -1,4 +1,5 @@
 """Everything needed for being able to create a virtual filesystem."""
+import typing
 from pathlib import Path
 
 
@@ -33,6 +34,13 @@ class FakeDirectory(FakeFileLikeObject):
         super(FakeDirectory, self).__init__(path=path)
         self.mode = mode
 
+    def parts(self) -> typing.List[Path]:
+        """returns the parts the directory is made of"""
+        path_so_far = Path()
+        for part in self.path.parts:
+            path_so_far = path_so_far.joinpath(part)
+            yield path_so_far
+
 
 class FakeFilesystem(object):
     """I mock the behaviour of an entire filesystem."""
@@ -45,19 +53,32 @@ class FakeFilesystem(object):
         """Return a path representing the current directory."""
         return Path(".")
 
+    def has(self, path) -> bool:
+        """Whether or not path already exists"""
+        return self.has_directory(path) or self.has_file(path)
+
     def mkdir(self, path: Path, mode: int = 0o777):
         """Create an empty directory."""
         if self.has(path):
             raise FileExistsError
 
-        if path.parent != self.curdir and not self.has(path.parent):
+        if path.parent != self.curdir and path.parent != path and not self.has(path.parent):
             raise FileNotFoundError
 
         self.directories.append(FakeDirectory(path, mode))
 
-    def has(self, path) -> bool:
-        """Whether or not path already exists"""
-        return self.has_directory(path) or self.has_file(path)
+    def makedirs(self, path: Path, mode: int = 0o777, exist_ok=False):
+        """Recursively make path to a directory."""
+        if self.has(path) and not exist_ok:
+            raise OSError(path)
+
+        for part in FakeDirectory(path).parts():
+            if self.has_file(part):
+                raise FileExistsError
+
+            if not self.has_directory(part):
+                self.mkdir(part, mode)
+
 
     def has_directory(self, path) -> bool:
         """Whether or not such a directory exists."""

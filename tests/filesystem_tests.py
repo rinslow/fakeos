@@ -57,6 +57,14 @@ class DirectoryCase(TestCase):
         assume(directory not in self.ILLEGAL_DIRECTORY_NAMES)
         os.mkdir("/" + directory)
 
+    @given(text())
+    def test_creating_root_directory(self, directory):
+        assume("/" not in directory and directory not in (self.ILLEGAL_DIRECTORY_NAMES))
+        os = FakeOS()
+        os.mkdir(directory)
+
+        assert os.filesystem.has_directory(Path(directory))
+
     @given(text(), sets(text()))
     @example("0", set())
     def test_listdir_with_subdirectories_only(self, directory, subdirectories):
@@ -130,6 +138,41 @@ class DirectoryCase(TestCase):
         os.mkdir("/" + directory + "/" + subdirectory)
 
         assert sorted(os.listdir("/" + directory)) == sorted([filename, subdirectory])
+
+    @given(text())
+    def test_makedirs_one_file_path(self, path):
+        assume(path not in ("", "..", ".") and "/" not in path)
+        os = FakeOS(
+            filesystem=FakeFilesystem(directories=[FakeDirectory(Path(path))]))
+        with self.assertRaises(OSError):
+            os.makedirs(path)
+
+        try:
+            os.makedirs(path, exist_ok=True)
+
+        except OSError:
+            self.fail()
+
+    @given(text())
+    @example("/")
+    @example("/0")
+    def test_makedirs_multiple_file_path(self, path: str):
+        assume("/" in path and not path.startswith("."))
+        os = FakeOS()
+        os.makedirs(path)
+
+        with self.assertRaises(OSError):
+            os.makedirs(path)
+
+    @given(text())
+    def test_makedir_when_part_of_the_path_exists_as_and_is_a_file(self, path: str):
+        assume("/" in path)
+        os = FakeOS(filesystem=FakeFilesystem(files=[FakeFile(Path(path))]))
+        dirname = Path(path).joinpath("dirname")
+
+        with self.assertRaises(FileExistsError):
+            os.makedirs(dirname)
+
 
 
 class CurrentDirectoryCase(TestCase):
