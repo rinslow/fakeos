@@ -7,14 +7,13 @@ from hypothesis.strategies import text, sets, integers
 from filesystem import FakeDirectory, FakeFile
 from unittest import TestCase
 
+ILLEGAL_NAMES = ("", ".", "..")
+
 
 class DirectoryCase(TestCase):
-    ILLEGAL_NAMES = ("", ".", "..")
-
     @given(text())
     def test_mkdir_when_directory_already_exists(self, directory: str):
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
 
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
@@ -25,8 +24,7 @@ class DirectoryCase(TestCase):
 
     @given(text())
     def test_mkdir_when_parent_directory_doesnt_exist(self, directory: str):
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
 
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
@@ -36,11 +34,8 @@ class DirectoryCase(TestCase):
 
     @given(text(), text())
     def test_mkdir_and_directory_exists_afterwards(self, directory: str, _file: str):
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
-
-        assume("/" not in _file)
-        assume(_file not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
+        assume("/" not in _file and _file not in ILLEGAL_NAMES)
 
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
@@ -51,15 +46,14 @@ class DirectoryCase(TestCase):
 
     @given(text())
     def test_mkdir_works(self, directory):
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
         os.mkdir("/" + directory)
 
     @given(text())
     def test_creating_root_directory(self, directory):
-        assume("/" not in directory and directory not in (self.ILLEGAL_NAMES))
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
         os = FakeOS()
         os.mkdir(directory)
 
@@ -68,8 +62,8 @@ class DirectoryCase(TestCase):
     @given(text(), sets(text()))
     @example("0", set())
     def test_listdir_with_subdirectories_only(self, directory, subdirectories):
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
+
         for subdirectory in subdirectories:
             assume(subdirectory not in self.ILLEGAL_NAMES)
             assume("/" not in subdirectory)
@@ -85,8 +79,7 @@ class DirectoryCase(TestCase):
 
     @given(text())
     def test_listdir_empty_directory(self, directory):
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
 
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))]))
@@ -97,10 +90,8 @@ class DirectoryCase(TestCase):
 
     @given(text(), text())
     def test_listdir_with_a_file_inside(self, directory, filename):
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
-        assume("/" not in filename)
-        assume(filename not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
+        assume("/" not in filename and filename not in ILLEGAL_NAMES)
 
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))],
@@ -119,12 +110,9 @@ class DirectoryCase(TestCase):
     def test_listdir_with_a_file_and_a_directory_inside(self, directory,
                                                         filename, subdirectory):
         assume(subdirectory != filename)
-        assume("/" not in directory)
-        assume(directory not in self.ILLEGAL_NAMES)
-        assume("/" not in filename)
-        assume(filename not in self.ILLEGAL_NAMES)
-        assume("/" not in subdirectory)
-        assume(subdirectory not in self.ILLEGAL_NAMES)
+        assume("/" not in directory and directory not in ILLEGAL_NAMES)
+        assume("/" not in filename and filename not in ILLEGAL_NAMES)
+        assume("/" not in subdirectory and subdirectory not in ILLEGAL_NAMES)
 
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path("/"))],
@@ -141,7 +129,8 @@ class DirectoryCase(TestCase):
 
     @given(text())
     def test_makedirs_one_file_path(self, path):
-        assume(path not in ("", "..", ".") and "/" not in path)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
+
         os = FakeOS(
             filesystem=FakeFilesystem(directories=[FakeDirectory(Path(path))]))
         with self.assertRaises(OSError):
@@ -173,9 +162,11 @@ class DirectoryCase(TestCase):
         with self.assertRaises(FileExistsError):
             os.makedirs(dirname)
 
+
+class ChownCase(TestCase):
     @given(text(), integers(), integers())
     def test_chown_to_a_directory(self, path: str, uid: int, gid: int):
-        assume("/" not in path and path not in self.ILLEGAL_NAMES)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
         os = FakeOS()
         os.mkdir(path)
         os.chown(path, uid=uid, gid=gid)
@@ -185,7 +176,7 @@ class DirectoryCase(TestCase):
 
     @given(text(), integers(), integers())
     def test_chown_to_a_file(self, path: str, uid: int, gid: int):
-        assume("/" not in path and path not in self.ILLEGAL_NAMES)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
         os = FakeOS(filesystem=FakeFilesystem(files=[FakeFile(Path(path))]))
         os.chown(path, gid=gid, uid=uid)
 
@@ -202,7 +193,7 @@ class DirectoryCase(TestCase):
     @given(text(), integers(), integers())
     def test_chown_not_changing_already_set_attributes(self, path: str,
                                                        uid: int, gid: int):
-        assume("/" not in path and path not in self.ILLEGAL_NAMES)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
         os = FakeOS()
         os.mkdir(path)
         os.chown(path, uid=uid, gid=gid)
@@ -211,14 +202,22 @@ class DirectoryCase(TestCase):
         assert os.filesystem[path].gid == gid
         assert os.filesystem[path].uid == uid
 
+class ChmodCase(TestCase):
+    @given(text(), integers())
+    def test_chmod(self, path, mode):
+        assume("/" not in path and path not in ILLEGAL_NAMES)
+        os = FakeOS()
+        os.mkdir(path)
+        os.chmod(path, mode)
+
+        assert os.filesystem[path].mode == mode
+
+
 
 class CurrentDirectoryCase(TestCase):
-    ILLEGAL_DIRECTORY_NAMES = ("", ".", "..")
-
     @given(text())
     def test_chdir(self, path):
-        assume("/" not in path)
-        assume(path not in self.ILLEGAL_DIRECTORY_NAMES)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
 
         os = FakeOS()
         os.mkdir(path)
@@ -227,8 +226,7 @@ class CurrentDirectoryCase(TestCase):
 
     @given(text())
     def test_chdir_directory_does_not_exist(self, path):
-        assume("/" not in path)
-        assume(path not in self.ILLEGAL_DIRECTORY_NAMES)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
 
         os = FakeOS()
         with self.assertRaises(FileNotFoundError):
@@ -236,8 +234,7 @@ class CurrentDirectoryCase(TestCase):
 
     @given(text())
     def test_chdir_directory_path_is_a_file(self, path):
-        assume("/" not in path)
-        assume(path not in self.ILLEGAL_DIRECTORY_NAMES)
+        assume("/" not in path and path not in ILLEGAL_NAMES)
 
         os = FakeOS(filesystem=FakeFilesystem(files=[FakeFile(Path(path))]))
         with self.assertRaises(NotADirectoryError):

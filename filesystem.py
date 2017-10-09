@@ -1,15 +1,18 @@
 """Everything needed for being able to create a virtual filesystem."""
 import typing
+from abc import ABC
 from pathlib import Path
 
 
-class FakeFileLikeObject(object):
+class FakeFileLikeObject(ABC):
     """I am what's common between a file, a directory, a symlink and a mount."""
 
-    def __init__(self, path: Path, uid: int = -1, gid: int = -1):
+    def __init__(self, path: Path, mode: int = 0o777, uid: int = -1,
+                 gid: int = -1):
         self.path = path
         self.uid = uid
         self.gid = gid
+        self.mode = mode
 
     @property
     def parent(self) -> Path:
@@ -24,19 +27,11 @@ class FakeFileLikeObject(object):
 
 class FakeFile(FakeFileLikeObject):
     """I mock a file"""
-    # pylint: disable=too-few-public-methods
-    def __init__(self, path: Path, mode: int = 0o77):
-        super(FakeFile, self).__init__(path=path)
-        self.mode = mode
+    pass
 
 
 class FakeDirectory(FakeFileLikeObject):
     """I mock a directory."""
-    # pylint: disable=too-few-public-methods
-    def __init__(self, path: Path, mode: int = 0o777):
-        super(FakeDirectory, self).__init__(path=path)
-        self.mode = mode
-
     def parts(self) -> typing.List[Path]:
         """returns the parts the directory is made of"""
         path_so_far = Path()
@@ -58,6 +53,8 @@ class FakeFilesystem(object):
         for file_object in self:
             if file_object.path.absolute() == path.absolute():
                 return file_object
+
+        raise FileNotFoundError(path)
 
     def __iter__(self) -> typing.Iterator[FakeFileLikeObject]:
         return iter(self.directories + self.files)
@@ -104,17 +101,21 @@ class FakeFilesystem(object):
 
     def listdir(self, path: Path) -> [str]:
         """List all files in a directory"""
-        for file_object in self.files + self.directories:
+        for file_object in self:
             if file_object.parent.absolute() == path.absolute():
                 yield file_object.name
 
     def chown(self, path: Path, uid: int = -1, gid: int = -1):
         """Change the ownership of a file."""
-        if not self.has(path):
-            raise FileNotFoundError(path)
-
         if uid != -1:
             self[path].uid = uid
 
         if gid != -1:
             self[path].gid = gid
+
+    def chmod(self, path: Path, mode: int):
+        """Chnage the mode of a file."""
+        if not isinstance(mode, int):
+            raise TypeError(mode)
+
+        self[path].mode = mode
