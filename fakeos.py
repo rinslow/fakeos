@@ -91,3 +91,10 @@ class FakeOS(object):
         target directory already exists.
          """
         self.filesystem.makedirs(Path(name), mode=mode, exist_ok=exist_ok)
+
+    def chown(self, path: str, uid: int = -1, gid: int = -1):
+        """Change the owner and group id of path to the numeric uid and gid.
+        To leave one of the ids unchanged, set it to -1.
+        Availability: Unix.
+        """
+        self.filesystem.chown(Path(path), uid, gid)

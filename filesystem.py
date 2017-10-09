@@ -5,8 +5,11 @@ from pathlib import Path
 
 class FakeFileLikeObject(object):
     """I am what's common between a file, a directory, a symlink and a mount."""
-    def __init__(self, path: Path):
+
+    def __init__(self, path: Path, uid: int = -1, gid: int = -1):
         self.path = path
+        self.uid = uid
+        self.gid = gid
 
     @property
     def parent(self) -> Path:
@@ -48,6 +51,17 @@ class FakeFilesystem(object):
         self.directories = directories or list()
         self.files = files or list()
 
+    def __getitem__(self, path: Path) -> FakeFileLikeObject:
+        if isinstance(path, str):
+            path = Path(path)
+
+        for file_object in self:
+            if file_object.path.absolute() == path.absolute():
+                return file_object
+
+    def __iter__(self) -> typing.Iterator[FakeFileLikeObject]:
+        return iter(self.directories + self.files)
+
     @property
     def curdir(self):
         """Return a path representing the current directory."""
@@ -80,11 +94,11 @@ class FakeFilesystem(object):
                 self.mkdir(part, mode)
 
 
-    def has_directory(self, path) -> bool:
+    def has_directory(self, path: Path) -> bool:
         """Whether or not such a directory exists."""
         return path.absolute() in (d.path.absolute() for d in self.directories)
 
-    def has_file(self, path) -> bool:
+    def has_file(self, path: Path) -> bool:
         """Whether or not such a file exists."""
         return path.absolute() in (f.path.absolute() for f in self.files)
 
@@ -93,3 +107,14 @@ class FakeFilesystem(object):
         for file_object in self.files + self.directories:
             if file_object.parent.absolute() == path.absolute():
                 yield file_object.name
+
+    def chown(self, path: Path, uid: int = -1, gid: int = -1):
+        """Change the ownership of a file."""
+        if not self.has(path):
+            raise FileNotFoundError(path)
+
+        if uid != -1:
+            self[path].uid = uid
+
+        if gid != -1:
+            self[path].gid = gid
