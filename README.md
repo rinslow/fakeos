@@ -16,6 +16,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * makedirs
 * chown
 * chmod
+* rmdir
 
 ## Not supported yet
 * access
@@ -30,8 +31,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * removedirs
 * rename
 * renames
-* repldace
-* rmdir
+* replace
 * scandir
 * stat, stat_float_times, statvfs, 
 * walk, fwalk
