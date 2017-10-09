@@ -129,3 +129,15 @@ class FakeOS(object):
         """Remove (delete) the directory path. Only works when the directory
         is empty, otherwise, OSError is raised. """
         return self.filesystem.rmdir(Path(path))
+
+    def remove(self, path: str):
+        """Remove (delete) the file path. If path is a directory,
+        OSError is raised. Use rmdir() to remove directories.
+        This function is semantically identical to unlink()."""
+        self.filesystem.remove(Path(path))
+
+    def unlink(self, path: str):
+        """Remove (delete) the file path. This function is semantically
+        identical to remove(); the unlink name is its traditional Unix name.
+        Please see the documentation for remove() for further information."""
+        self.remove(path)

@@ -134,3 +134,15 @@ class FakeFilesystem(object):
         for directory in self.directories:
             if directory.path.absolute() == path.absolute():
                 self.directories.remove(directory)
+
+    def remove(self, path: Path):
+        """Remove a file."""
+        if self.has_directory(path):
+            raise IsADirectoryError(path)
+
+        if not self.has_file(path):
+            raise FileNotFoundError(path)
+
+        for file in self.files:
+            if file.path.absolute() == path.absolute():
+                self.files.remove(file)

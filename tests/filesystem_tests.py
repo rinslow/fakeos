@@ -240,6 +240,35 @@ class ChmodCase(TestCase):
         assert os.filesystem[path].mode == mode
 
 
+class FileCase(TestCase):
+    @given(text())
+    def test_remove_a_file(self, path):
+        assume("/" not in path and path not in ILLEGAL_NAMES)
+        os = FakeOS()
+        os.mkdir("hello")
+
+        os.filesystem.files.append(FakeFile(Path("hello/" + path)))
+        assert os.listdir("hello") == [path]
+        os.remove("hello/" + path)
+        assert os.listdir("hello") == []
+
+    @given(text())
+    def test_remove_a_directory(self, path):
+        assume("/" not in path and path not in ILLEGAL_NAMES)
+        os = FakeOS()
+        os.mkdir(path)
+
+        with self.assertRaises(IsADirectoryError):
+            os.remove(path)
+
+    @given(text())
+    def test_remove_a_non_existent_file(self, path):
+        assume("/" not in path and path not in ILLEGAL_NAMES)
+        os = FakeOS()
+
+        with self.assertRaises(FileNotFoundError):
+            os.remove(path)
+
 
 class CurrentDirectoryCase(TestCase):
     @given(text())

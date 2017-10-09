@@ -17,6 +17,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * chown
 * chmod
 * rmdir
+* remove
 
 ## Not supported yet
 * access
@@ -27,7 +28,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * sync
 * truncate
 * major
-* remove
 * removedirs
 * rename
 * renames
