@@ -18,6 +18,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * chmod
 * rmdir
 * remove
+* unlink
 
 ## Not supported yet
 * access
@@ -46,7 +47,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * ctermid
 * confstr
 * cpu_count
-* link, unlink, readlink
+* link, readlink
 * fsencode, fsdecode
 * fspath
 * get_exec_path
