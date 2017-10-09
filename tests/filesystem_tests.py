@@ -154,13 +154,40 @@ class DirectoryCase(TestCase):
             os.makedirs(path)
 
     @given(text())
-    def test_makedir_when_part_of_the_path_exists_as_and_is_a_file(self, path: str):
+    def test_makedirs_when_part_of_the_path_exists_as_and_is_a_file(self, path: str):
         assume("/" in path)
         os = FakeOS(filesystem=FakeFilesystem(files=[FakeFile(Path(path))]))
         dirname = Path(path).joinpath("dirname")
 
         with self.assertRaises(FileExistsError):
             os.makedirs(dirname)
+
+    @given(text())
+    def test_rmdir(self, path):
+        assume("/" not in path and path not in ILLEGAL_NAMES)
+        os = FakeOS()
+        fullpath = "/" + path
+        os.makedirs(fullpath)
+        assert path in os.listdir("/")
+
+        os.rmdir(fullpath)
+        assert path not in os.listdir("/")
+
+        with self.assertRaises(FileNotFoundError):
+            os.rmdir(fullpath)
+
+        os.makedirs(fullpath + "/hello")
+
+        with self.assertRaises(OSError):
+            os.rmdir(fullpath)
+
+        os.filesystem.files.append(FakeFile(Path(path)))
+
+        with self.assertRaises(NotADirectoryError):
+            os.rmdir(path)
+
+
+
 
 
 class ChownCase(TestCase):

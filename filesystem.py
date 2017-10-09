@@ -99,11 +99,11 @@ class FakeFilesystem(object):
         """Whether or not such a file exists."""
         return path.absolute() in (f.path.absolute() for f in self.files)
 
-    def listdir(self, path: Path) -> [str]:
+    def listdir(self, path: Path) -> typing.Iterator[FakeFileLikeObject]:
         """List all files in a directory"""
         for file_object in self:
             if file_object.parent.absolute() == path.absolute():
-                yield file_object.name
+                yield file_object
 
     def chown(self, path: Path, uid: int = -1, gid: int = -1):
         """Change the ownership of a file."""
@@ -119,3 +119,18 @@ class FakeFilesystem(object):
             raise TypeError(mode)
 
         self[path].mode = mode
+
+    def rmdir(self, path: Path):
+        """Remove a directory."""
+        if self.has_file(path):
+            raise NotADirectoryError(path)
+
+        if not self.has_directory(path):
+            raise FileNotFoundError(path)
+
+        if list(self.listdir(path)):
+            raise OSError(path)
+
+        for directory in self.directories:
+            if directory.path.absolute() == path.absolute():
+                self.directories.remove(directory)

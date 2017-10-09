@@ -31,6 +31,14 @@ class FakeOS(object):
         explicitly to set them."""
         self.filesystem.mkdir(Path(path), mode=mode)
 
+    def listdir(self, path: str) -> list:
+        """Return a list containing the names of the entries in the directory
+        given by path. The list is in arbitrary order, and does not include the
+        special entries '.' and '..' even if they are present in the
+        directory."""
+        file_objects = self.filesystem.listdir(Path(path))
+        return [file_object.name for file_object in file_objects]
+
     def getcwd(self) -> str:
         """"Return a string representing the current working directory."""
         return str(self.cwd.absolute())
@@ -46,13 +54,6 @@ class FakeOS(object):
             raise NotADirectoryError(path)
 
         self.cwd = Path(path)
-
-    def listdir(self, path: str) -> list:
-        """Return a list containing the names of the entries in the directory
-        given by path. The list is in arbitrary order, and does not include the
-        special entries '.' and '..' even if they are present in the
-        directory."""
-        return list(self.filesystem.listdir(Path(path)))
 
     def environ(self) -> dict:
         """A dictionary representing the string environment.
@@ -123,3 +124,8 @@ class FakeOS(object):
             stat.S_IWOTH
             stat.S_IXOTH"""
         self.filesystem.chmod(Path(path), mode)
+
+    def rmdir(self, path: str):
+        """Remove (delete) the directory path. Only works when the directory
+        is empty, otherwise, OSError is raised. """
+        return self.filesystem.rmdir(Path(path))
