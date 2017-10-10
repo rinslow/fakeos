@@ -1,3 +1,5 @@
+import os as _os
+
 from pathlib import Path
 
 from fakeos import FakeOS, FakeFilesystem
@@ -295,3 +297,22 @@ class CurrentDirectoryCase(TestCase):
         os = FakeOS(filesystem=FakeFilesystem(files=[FakeFile(Path(path))]))
         with self.assertRaises(NotADirectoryError):
             os.chdir(path)
+
+class DeviceCase(TestCase):
+    @given(integers(), integers())
+    def test_makedev(self, major, minor):
+        assume(-1 < major < 2 ** 31 and -1  < minor < 2 ** 31)
+        os = FakeOS()
+        assert os.makedev(major, minor) == _os.makedev(major, minor)
+
+    @given(integers())
+    def test_major(self, device):
+        assume(-1 < device < 2 ** 64)
+        os = FakeOS()
+        assert os.major(device) == _os.major(device)
+
+    @given(integers())
+    def test_minor(self, device):
+        assume(-1 < device < 2 ** 64)
+        os = FakeOS()
+        assert os.minor(device) == _os.minor(device)

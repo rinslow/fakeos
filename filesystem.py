@@ -6,7 +6,6 @@ from pathlib import Path
 
 class FakeFileLikeObject(ABC):
     """I am what's common between a file, a directory, a symlink and a mount."""
-
     def __init__(self, path: Path, mode: int = 0o777, uid: int = -1,
                  gid: int = -1):
         self.path = path

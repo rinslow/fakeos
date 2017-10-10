@@ -19,6 +19,9 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * rmdir
 * remove
 * unlink
+* major
+* minor
+* makedev
 
 ## Not supported yet
 * access
@@ -28,7 +31,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * symlink
 * sync
 * truncate
-* major
 * removedirs
 * rename
 * renames
@@ -36,8 +38,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * scandir
 * stat, stat_float_times, statvfs, 
 * walk, fwalk
-* minor
-* makedev
 * abort
 * _exit
 * execl, execle, execlp, execlpe, execv, execve, execvp, execvpe

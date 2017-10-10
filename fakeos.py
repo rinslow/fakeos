@@ -1,6 +1,8 @@
 """Full mock of the builtin 'os' module for blazing-fast unit-testing."""
 from pathlib import Path
+import typing
 
+from device import FakeDevice
 from environment import FakeEnvironment
 from filesystem import FakeFilesystem
 
@@ -10,11 +12,13 @@ class FakeOS(object):
     # pylint: disable=too-few-public-methods
     def __init__(self, cwd: Path = None,
                  filesystem: FakeFilesystem = None,
-                 environment: FakeEnvironment = None):
+                 environment: FakeEnvironment = None,
+                 fake_device: typing.Type[FakeDevice]=FakeDevice):
 
         self.cwd = cwd or Path(__file__)
         self.filesystem = filesystem or FakeFilesystem()
         self.environment = environment or FakeEnvironment()
+        self.device = fake_device
 
     def mkdir(self, path: str, mode: int = 0o777):
         """Create a directory named path with numeric mode mode.
@@ -141,3 +145,18 @@ class FakeOS(object):
         identical to remove(); the unlink name is its traditional Unix name.
         Please see the documentation for remove() for further information."""
         self.remove(path)
+
+    def makedev(self, major: int, minor: int) -> int:
+        """Compose a raw device number from the major and minor
+        device numbers."""
+        return self.device.from_major_and_minor(major, minor).device
+
+    def major(self, device: int) -> int:
+        """Extract the device major number from a raw device number
+        (usually the st_dev or st_rdev field from stat)."""
+        return self.device(device).major
+
+    def minor(self, device: int) -> int:
+        """Extract the device minor number from a raw device number
+        (usually the st_dev or st_rdev field from stat)."""
+        return self.device(device).minor
