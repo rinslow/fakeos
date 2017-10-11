@@ -4,4 +4,4 @@ from fakeos import FakeOS
 from filesystem import FakeFilesystem, FakeDirectory, FakeFile
 from environment import FakeEnvironment
 from device import FakeDevice
-from fakeuser import User
+from fakeuser import FakeUser

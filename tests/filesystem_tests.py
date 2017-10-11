@@ -8,6 +8,7 @@ from hypothesis import given, assume, example
 from hypothesis.strategies import text, sets, integers
 
 from filesystem import FakeDirectory, FakeFile
+from fakeuser import FakeUser
 from unittest import TestCase
 
 from operating_system import Windows, Unix
@@ -167,6 +168,12 @@ class DirectoryCase(TestCase):
         with self.assertRaises(FileExistsError):
             os.makedirs(dirname)
 
+    def test_rmdir_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(uid=0, gid=0))
+        os.mkdir("/", mode=0)
+        with self.assertRaises(PermissionError):
+            os.rmdir("/")
+
     @given(text())
     def test_rmdir(self, path):
         assume("/" not in path and path not in ILLEGAL_NAMES)
@@ -190,9 +197,6 @@ class DirectoryCase(TestCase):
 
         with self.assertRaises(NotADirectoryError):
             os.rmdir(path)
-
-
-
 
 
 class ChownCase(TestCase):
@@ -234,6 +238,13 @@ class ChownCase(TestCase):
         assert os.filesystem[path].gid == gid
         assert os.filesystem[path].uid == uid
 
+    def test_chown_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
+        os.mkdir("/", mode=0)  # Root only
+        with self.assertRaises(PermissionError):
+            os.chown('/', uid=3)
+
+
 class ChmodCase(TestCase):
     @given(text(), integers())
     def test_chmod(self, path, mode):
@@ -243,6 +254,12 @@ class ChmodCase(TestCase):
         os.chmod(path, mode)
 
         assert os.filesystem[path].mode == mode
+
+    def test_chmod_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
+        os.mkdir("/", mode=0o100)  # Root only
+        with self.assertRaises(PermissionError):
+            os.chmod("/", mode=0o666)
 
 
 class FileCase(TestCase):
@@ -424,3 +441,9 @@ class RenameCase(TestCase):
         os = FakeOS()
         os.mkdir(path)
         os.rename(path, path)
+
+    def test_renaming_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser())
+        os.mkdir("/", mode=0o000)
+        with self.assertRaises(PermissionError):
+            os.rename("/", "lol")

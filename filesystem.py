@@ -4,7 +4,7 @@ from abc import ABC
 from pathlib import Path
 
 from operating_system import OperatingSystem, Unix, Windows
-from fakeuser import User, Root
+from fakeuser import FakeUser, Root
 
 class FakeFileLikeObject(ABC):
     """I am what's common between a file, a directory, a symlink and a mount."""
@@ -51,7 +51,7 @@ class FakeFilesystem(object):
                  directories=None,
                  files=None,
                  operating_system: OperatingSystem = None,
-                 user: User = None):
+                 user: FakeUser = None):
 
         self.directories = directories or list()
         self.files = files or list()
@@ -88,7 +88,13 @@ class FakeFilesystem(object):
         if path.parent != self.curdir and path.parent != path and not self.has(path.parent):
             raise FileNotFoundError
 
-        self.directories.append(FakeDirectory(path, mode))
+        if self.has_directory(path.parent) and not self.user.can_write(self[path.parent]):
+            raise PermissionError(path.parent)
+
+        self.directories.append(FakeDirectory(path,
+                                              mode,
+                                              uid=self.user.uid,
+                                              gid=self.user.gid))
 
     def makedirs(self, path: Path, mode: int = 0o777, exist_ok=False):
         """Recursively make path to a directory."""
@@ -113,12 +119,18 @@ class FakeFilesystem(object):
 
     def listdir(self, path: Path) -> typing.Iterator[FakeFileLikeObject]:
         """List all files in a directory"""
+        if not self.user.can_execute(self[path]):
+            raise PermissionError(path)
+
         for file_object in self:
             if file_object.parent.absolute() == path.absolute():
                 yield file_object
 
     def chown(self, path: Path, uid: int = -1, gid: int = -1):
         """Change the ownership of a file."""
+        if not self.user.can_write(self[path]):
+            raise PermissionError(path)
+
         if uid != -1:
             self[path].uid = uid
 
@@ -129,6 +141,9 @@ class FakeFilesystem(object):
         """Chnage the mode of a file."""
         if not isinstance(mode, int):
             raise TypeError(mode)
+
+        if not self.user.can_write(self[path]):
+            raise PermissionError(path)
 
         self[path].mode = mode
 
@@ -143,6 +158,9 @@ class FakeFilesystem(object):
         if list(self.listdir(path)):
             raise OSError(path)
 
+        if not self.user.can_write(self[path]):
+            raise PermissionError(path)
+
         for directory in self.directories:
             if directory.path.absolute() == path.absolute():
                 self.directories.remove(directory)
@@ -154,6 +172,9 @@ class FakeFilesystem(object):
 
         if not self.has_file(path):
             raise FileNotFoundError(path)
+
+        if not self.user.can_write(self[path]):
+            raise PermissionError(path)
 
         for file in self.files:
             if file.path.absolute() == path.absolute():
@@ -169,6 +190,12 @@ class FakeFilesystem(object):
 
         if isinstance(self.operating_system, Windows) and self.has(dst):
             raise FileExistsError(dst)
+
+        if not self.user.can_write(self[src]):
+            raise PermissionError(src)
+
+        if self.has_directory(dst.parent) and not self.user.can_write(self[dst.parent]):
+            raise PermissionError(dst)
 
         self[src].path = dst
 

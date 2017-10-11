@@ -6,7 +6,7 @@ from device import FakeDevice
 from environment import FakeEnvironment
 from filesystem import FakeFilesystem
 from operating_system import OperatingSystem, Unix
-from fakeuser import User, Root
+from fakeuser import FakeUser, Root
 
 
 class FakeOS(object):
@@ -16,7 +16,7 @@ class FakeOS(object):
     def __init__(self, cwd: Path = None,
                  filesystem: FakeFilesystem = None,
                  environment: FakeEnvironment = None,
-                 user: User = None,
+                 user: FakeUser = None,
                  operating_system: OperatingSystem = None,
                  fake_device: typing.Type[FakeDevice]=FakeDevice):
 

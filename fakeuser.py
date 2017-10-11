@@ -2,32 +2,32 @@
 from typing import Tuple
 
 
-class User(object):
+class FakeUser(object):
     """A user in the system"""
     def __init__(self, is_sudoer: bool = False, gid: int = -1, uid: int = -1):
         self.is_sudoer = is_sudoer
         self.gid = gid
         self.uid = uid
 
-    def can_read(self, mode: int, file_gid: int, file_uid: int) -> bool:
+    def can_read(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can read the file"""
-        return self._can_access(mode=mode,
-                                file_gid=file_gid,
-                                file_uid=file_uid,
+        return self._can_access(mode=file_object.mode,
+                                file_gid=file_object.gid,
+                                file_uid=file_object.uid,
                                 action_bit=0b100)
 
-    def can_write(self, mode: int, file_gid: int, file_uid: int) -> bool:
+    def can_write(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can write to the file"""
-        return self._can_access(mode=mode,
-                                file_gid=file_gid,
-                                file_uid=file_uid,
+        return self._can_access(mode=file_object.mode,
+                                file_gid=file_object.gid,
+                                file_uid=file_object.uid,
                                 action_bit=0b010)
 
-    def can_execute(self, mode: int, file_gid: int, file_uid: int) -> bool:
+    def can_execute(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can execute the file"""
-        return self._can_access(mode=mode,
-                                file_gid=file_gid,
-                                file_uid=file_uid,
+        return self._can_access(mode=file_object.mode,
+                                file_gid=file_object.gid,
+                                file_uid=file_object.uid,
                                 action_bit=0b001)
 
     def _can_access(self, mode: int, file_gid: int, action_bit: int,
@@ -48,10 +48,10 @@ class User(object):
             raise ValueError("Illegal mode %d" % mode)
 
         owner, group, everyone = octal
-        return owner, group, everyone
+        return int(owner), int(group), int(everyone)
 
 
-class Root(User):
+class Root(FakeUser):
     """A root user"""
     def __init__(self, uid: int = -1, gid: int = -1):
         super().__init__(uid=uid, gid=gid, is_sudoer=True)
