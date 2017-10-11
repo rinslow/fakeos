@@ -1,6 +1,7 @@
 import os as _os
 
 from pathlib import Path
+from string import ascii_letters
 
 from fakeos import FakeOS, FakeFilesystem
 from hypothesis import given, assume, example
@@ -8,6 +9,8 @@ from hypothesis.strategies import text, sets, integers
 
 from filesystem import FakeDirectory, FakeFile
 from unittest import TestCase
+
+from operating_system import Windows, Unix
 
 ILLEGAL_NAMES = ("", ".", "..")
 
@@ -67,7 +70,7 @@ class DirectoryCase(TestCase):
         assume("/" not in directory and directory not in ILLEGAL_NAMES)
 
         for subdirectory in subdirectories:
-            assume(subdirectory not in self.ILLEGAL_NAMES)
+            assume(subdirectory not in ILLEGAL_NAMES)
             assume("/" not in subdirectory)
 
         os = FakeOS(
@@ -316,3 +319,108 @@ class DeviceCase(TestCase):
         assume(-1 < device < 2 ** 64)
         os = FakeOS()
         assert os.minor(device) == _os.minor(device)
+
+
+class RenameCase(TestCase):
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_root_directory(self, old, new):
+        assume(old != new)
+        os = FakeOS()
+        os.mkdir(old)
+
+        os.rename(old, new)
+
+        with self.assertRaises(FileNotFoundError):
+            old_file = os.filesystem[Path(old)]
+
+        try:
+            new_file = os.filesystem[Path(new)]
+
+        except FileNotFoundError:
+            self.fail("Filke was not renamed.")
+
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_non_root_directory(self, root, old, new):
+        os = FakeOS()
+        os.mkdir(root)
+        os.mkdir(root + "/" + old)
+
+        os.rename(root + "/" + old, root + "/" + new)
+
+        assert os.listdir(root) == [new]
+
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_root_non_leaf_folder(self, old, new, inside):
+        os = FakeOS()
+        os.mkdir(old)
+        os.mkdir(old + "/" + inside)
+
+        os.rename(old, new)
+        assert os.listdir(new) == [inside]
+
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_non_root_non_leaf_folder(self, old, new, inside, root):
+        os = FakeOS()
+        os.makedirs(root + "/" + old + "/" + inside)
+
+        os.rename(root + "/" + old, root + "/" + new)
+
+        assert os.listdir(root + "/" + new) == [inside]
+
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_when_destination_exists_on_windows(self, old, new):
+        assume(old != new)
+
+        os = FakeOS(operating_system=Windows())
+        os.mkdir(old)
+        os.mkdir(new)
+
+        with self.assertRaises(OSError):
+            os.rename(old, new)
+
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_when_destination_exists_on_unix(self, old, new, somefile):
+        assume(old != new)
+
+        os = FakeOS(operating_system=Unix(),
+                    filesystem=FakeFilesystem(files=[FakeFile(Path(old)),
+                                                     FakeFile(Path(new))],
+                                              operating_system=Unix()))
+
+        os.rename(old, new)
+        os.filesystem[Path(new)]
+
+        with self.assertRaises(OSError):
+            fileobject = os.filesystem[Path(old)]
+
+    @given(text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1),
+           text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_a_folder_and_changing_its_hierarchy(self, a, b, c, d, e):
+        assume(e != b)
+        os = FakeOS()
+        os.makedirs(a + "/" + b + "/" + c + "/" + d)
+
+        os.rename(a + "/" + b + "/" + c, a + "/" + e)
+
+        assert set(os.listdir(a)) == {b, e}
+        assert os.listdir(a + "/" + e) == [d]
+
+    @given(text(alphabet=ascii_letters, min_size=1))
+    def test_renaming_to_the_same_thing(self, path):
+        os = FakeOS()
+        os.mkdir(path)
+        os.rename(path, path)

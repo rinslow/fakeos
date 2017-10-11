@@ -3,10 +3,15 @@ import typing
 from abc import ABC
 from pathlib import Path
 
+from operating_system import OperatingSystem, Unix, Windows
+from fakeuser import User, Root
 
 class FakeFileLikeObject(ABC):
     """I am what's common between a file, a directory, a symlink and a mount."""
-    def __init__(self, path: Path, mode: int = 0o777, uid: int = -1,
+
+    def __init__(self, path: Path,
+                 mode: int = 0o777,
+                 uid: int = -1,
                  gid: int = -1):
         self.path = path
         self.uid = uid
@@ -41,9 +46,17 @@ class FakeDirectory(FakeFileLikeObject):
 
 class FakeFilesystem(object):
     """I mock the behaviour of an entire filesystem."""
-    def __init__(self, directories=None, files=None):
+
+    def __init__(self,
+                 directories=None,
+                 files=None,
+                 operating_system: OperatingSystem = None,
+                 user: User = None):
+
         self.directories = directories or list()
         self.files = files or list()
+        self.user = user or Root()
+        self.operating_system = operating_system or Unix()
 
     def __getitem__(self, path: Path) -> FakeFileLikeObject:
         if isinstance(path, str):
@@ -145,3 +158,20 @@ class FakeFilesystem(object):
         for file in self.files:
             if file.path.absolute() == path.absolute():
                 self.files.remove(file)
+
+    def rename(self, src: Path, dst: Path):
+        """Rename a file."""
+        if src == dst:
+            return
+
+        if self.has_directory(dst):
+            raise FileExistsError(dst)
+
+        if isinstance(self.operating_system, Windows) and self.has(dst):
+            raise FileExistsError(dst)
+
+        self[src].path = dst
+
+        for file_object in self:
+            if src in file_object.path.parents:
+                file_object.path = dst / file_object.path.relative_to(src)

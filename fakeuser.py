@@ -1,0 +1,57 @@
+"""Everything related to configuring a virtual user."""
+from typing import Tuple
+
+
+class User(object):
+    """A user in the system"""
+    def __init__(self, is_sudoer: bool = False, gid: int = -1, uid: int = -1):
+        self.is_sudoer = is_sudoer
+        self.gid = gid
+        self.uid = uid
+
+    def can_read(self, mode: int, file_gid: int, file_uid: int) -> bool:
+        """Whether or not the user can read the file"""
+        return self._can_access(mode=mode,
+                                file_gid=file_gid,
+                                file_uid=file_uid,
+                                action_bit=0b100)
+
+    def can_write(self, mode: int, file_gid: int, file_uid: int) -> bool:
+        """Whether or not the user can write to the file"""
+        return self._can_access(mode=mode,
+                                file_gid=file_gid,
+                                file_uid=file_uid,
+                                action_bit=0b010)
+
+    def can_execute(self, mode: int, file_gid: int, file_uid: int) -> bool:
+        """Whether or not the user can execute the file"""
+        return self._can_access(mode=mode,
+                                file_gid=file_gid,
+                                file_uid=file_uid,
+                                action_bit=0b001)
+
+    def _can_access(self, mode: int, file_gid: int, action_bit: int,
+                    file_uid: int) -> bool:
+        """Whether or not the user can perform an action on the file"""
+        owner, group, everyone = self._parse_mode(mode)
+        return any([self.is_sudoer,
+                    owner & action_bit and file_uid == self.uid,
+                    group & action_bit and file_gid == self.gid,
+                    everyone & action_bit])
+
+    @staticmethod
+    def _parse_mode(mode: int) -> Tuple[int, int, int]:
+        """Return the root byte, group byte and everyone byte of a mode"""
+        octal = "{:o}".format(mode).zfill(3)
+
+        if len(octal) != 3:
+            raise ValueError("Illegal mode %d" % mode)
+
+        owner, group, everyone = octal
+        return owner, group, everyone
+
+
+class Root(User):
+    """A root user"""
+    def __init__(self, uid: int = -1, gid: int = -1):
+        super().__init__(uid=uid, gid=gid, is_sudoer=True)

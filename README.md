@@ -22,6 +22,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * major
 * minor
 * makedev
+* rename
 
 ## Not supported yet
 * access
@@ -32,7 +33,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * sync
 * truncate
 * removedirs
-* rename
 * renames
 * replace
 * scandir

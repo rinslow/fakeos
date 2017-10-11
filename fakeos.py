@@ -5,20 +5,28 @@ import typing
 from device import FakeDevice
 from environment import FakeEnvironment
 from filesystem import FakeFilesystem
+from operating_system import OperatingSystem, Unix
+from fakeuser import User, Root
 
 
 class FakeOS(object):
     """I mock the 'os' module"""
-    # pylint: disable=too-few-public-methods
+
+    # pylint: disable=too-many-arguments
     def __init__(self, cwd: Path = None,
                  filesystem: FakeFilesystem = None,
                  environment: FakeEnvironment = None,
+                 user: User = None,
+                 operating_system: OperatingSystem = None,
                  fake_device: typing.Type[FakeDevice]=FakeDevice):
 
         self.cwd = cwd or Path(__file__)
-        self.filesystem = filesystem or FakeFilesystem()
+        self.filesystem = filesystem or FakeFilesystem(user=user,
+                                                       operating_system=operating_system)
         self.environment = environment or FakeEnvironment()
         self.device = fake_device
+        self.user = user or Root()
+        self.operating_system = operating_system or Unix()
 
     def mkdir(self, path: str, mode: int = 0o777):
         """Create a directory named path with numeric mode mode.
@@ -160,3 +168,17 @@ class FakeOS(object):
         """Extract the device minor number from a raw device number
         (usually the st_dev or st_rdev field from stat)."""
         return self.device(device).minor
+
+    def rename(self, src, dst):
+        """Rename the file or directory src to dst. If dst is a directory,
+         OSError will be raised. On Unix, if dst exists and is a file,
+         it will be replaced silently if the user has permission. On Windows,
+         if dst already exists, OSError will be raised even if it is a file.
+
+         The operation may fail on some Unix flavors if src and dst are on
+         different filesystems. If successful, the renaming will be an atomic
+         operation (this is a POSIX requirement).
+
+         If you want cross-platform overwriting of the destination,
+         use replace()."""
+        return self.filesystem.rename(Path(src), Path(dst))
