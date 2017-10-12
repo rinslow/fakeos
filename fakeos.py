@@ -4,7 +4,8 @@ import typing
 
 from device import FakeDevice
 from environment import FakeEnvironment
-from filesystem import FakeFilesystem
+from filesystem import FakeFilesystem, FakeFilesystemWithPermissions, \
+    AbstractFilesystem
 from operating_system import OperatingSystem, Unix
 from fakeuser import FakeUser, Root
 
@@ -14,15 +15,16 @@ class FakeOS(object):
 
     # pylint: disable=too-many-arguments
     def __init__(self, cwd: Path = None,
-                 filesystem: FakeFilesystem = None,
+                 filesystem: AbstractFilesystem = None,
                  environment: FakeEnvironment = None,
                  user: FakeUser = None,
                  operating_system: OperatingSystem = None,
                  fake_device: typing.Type[FakeDevice]=FakeDevice):
 
         self.cwd = cwd or Path(__file__)
-        self.filesystem = filesystem or FakeFilesystem(user=user,
-                                                       operating_system=operating_system)
+        self.filesystem = filesystem or FakeFilesystemWithPermissions(
+            FakeFilesystem(user=user, operating_system=operating_system))
+
         self.environment = environment or FakeEnvironment()
         self.device = fake_device
         self.user = user or Root()

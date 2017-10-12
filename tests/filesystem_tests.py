@@ -3,11 +3,12 @@ import os as _os
 from pathlib import Path
 from string import ascii_letters
 
-from fakeos import FakeOS, FakeFilesystem
+from fakeos import FakeOS
 from hypothesis import given, assume, example
 from hypothesis.strategies import text, sets, integers
 
-from filesystem import FakeDirectory, FakeFile
+from filesystem import FakeDirectory, FakeFile, FakeFilesystem, \
+    FakeFilesystemWithPermissions
 from fakeuser import FakeUser
 from unittest import TestCase
 
@@ -168,13 +169,8 @@ class DirectoryCase(TestCase):
         with self.assertRaises(FileExistsError):
             os.makedirs(dirname)
 
-    def test_rmdir_when_theres_no_permission_to_do_so(self):
-        os = FakeOS(user=FakeUser(uid=0, gid=0))
-        os.mkdir("/", mode=0)
-        with self.assertRaises(PermissionError):
-            os.rmdir("/")
-
     @given(text())
+    @example("0")
     def test_rmdir(self, path):
         assume("/" not in path and path not in ILLEGAL_NAMES)
         os = FakeOS()
@@ -193,7 +189,8 @@ class DirectoryCase(TestCase):
         with self.assertRaises(OSError):
             os.rmdir(fullpath)
 
-        os.filesystem.files.append(FakeFile(Path(path)))
+        os = FakeOS(filesystem=FakeFilesystemWithPermissions(FakeFilesystem(
+            files=[FakeFile(Path(path))])))
 
         with self.assertRaises(NotADirectoryError):
             os.rmdir(path)
@@ -255,21 +252,16 @@ class ChmodCase(TestCase):
 
         assert os.filesystem[path].mode == mode
 
-    def test_chmod_when_theres_no_permission_to_do_so(self):
-        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
-        os.mkdir("/", mode=0o100)  # Root only
-        with self.assertRaises(PermissionError):
-            os.chmod("/", mode=0o666)
-
 
 class FileCase(TestCase):
     @given(text())
+    @example("0")
     def test_remove_a_file(self, path):
         assume("/" not in path and path not in ILLEGAL_NAMES)
-        os = FakeOS()
+        os = FakeOS(filesystem=FakeFilesystemWithPermissions(FakeFilesystem(
+            files=[FakeFile(Path("hello/" + path))])))
         os.mkdir("hello")
 
-        os.filesystem.files.append(FakeFile(Path("hello/" + path)))
         assert os.listdir("hello") == [path]
         os.remove("hello/" + path)
         assert os.listdir("hello") == []
@@ -442,8 +434,22 @@ class RenameCase(TestCase):
         os.mkdir(path)
         os.rename(path, path)
 
+
+class PermissionsCase(TestCase):
+    def test_rmdir_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(uid=0, gid=0))
+        os.mkdir("/", mode=0)
+        with self.assertRaises(PermissionError):
+            os.rmdir("/")
+
     def test_renaming_when_theres_no_permission_to_do_so(self):
         os = FakeOS(user=FakeUser())
         os.mkdir("/", mode=0o000)
         with self.assertRaises(PermissionError):
             os.rename("/", "lol")
+
+    def test_chmod_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
+        os.mkdir("/", mode=0o100)  # Root only
+        with self.assertRaises(PermissionError):
+            os.chmod("/", mode=0o666)
