@@ -445,6 +445,25 @@ class AccessCase(TestCase):
         os.mkdir("/")
         assert os.access("/", os.F_OK) and not os.access("other", os.F_OK)
 
+    def test_access_effective_ids(self):
+        os = FakeOS(user=FakeUser(gid=-2, uid=-2, is_sudoer=False))
+        os.setgid(0)
+        os.setuid(0)
+
+        assert os.getgid() == 0
+        assert os.getuid() == 0
+
+        os.mkdir("/", mode=0o070)  # Group only
+        os.setgid(-7)
+        os.setuid(-7)
+        os.seteuid(0)
+        os.setegid(0)
+
+
+        assert not os.access("/", mode=os.R_OK)
+        assert os.access("/", mode=os.R_OK, effective_ids=True)
+
+
     def test_access_when_owner(self):
         os = FakeOS(user=FakeUser(gid=14, uid=42))
         os.mkdir("r", mode=0o400)
@@ -629,3 +648,33 @@ class PermissionsCase(TestCase):
         os.mkdir("/", mode=0o666)  # No execution allowed
         with self.assertRaises(PermissionError):
             os.listdir("/")
+
+
+class UserAndGroupCase(TestCase):
+    @given(integers())
+    def test_gid(self, gid: int):
+        os = FakeOS()
+        os.setgid(gid)
+
+        assert os.getgid() == gid
+
+    @given(integers())
+    def test_uid(self, uid: int):
+        os = FakeOS()
+        os.setuid(uid)
+
+        assert os.getuid() == uid
+
+    @given(integers())
+    def test_egid(self, egid: int):
+        os = FakeOS()
+        os.setegid(egid)
+
+        assert os.getegid() == egid
+
+    @given(integers())
+    def test_euid(self, euid: int):
+        os = FakeOS()
+        os.seteuid(euid)
+
+        assert os.geteuid() == euid

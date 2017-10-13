@@ -9,6 +9,12 @@ class FakeUser(object):
         self.gid = gid
         self.uid = uid
 
+    def clone(self) -> 'FakeUser':
+        """Clone the existing fake_user"""
+        return FakeUser(is_sudoer=self.is_sudoer,
+                        gid=self.gid,
+                        uid=self.uid)
+
     def can_read(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can read the file"""
         return self.can_access(file_object, action_mask=0b100)

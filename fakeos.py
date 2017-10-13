@@ -12,7 +12,7 @@ from fakeuser import FakeUser, Root
 
 class FakeOS(object):
     """I mock the 'os' module"""
-    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-arguments, too-many-public-methods
 
     # Access-related
     R_OK = 0b100
@@ -212,4 +212,45 @@ class FakeOS(object):
         os.supports_effective_ids. If it is unavailable,
         using it will raise a NotImplementedError."""
         # pylint: disable=unused-argument
-        return self.filesystem.access(path=Path(path), mode=mode)
+        return self.filesystem.access(path=Path(path),
+                                      mode=mode,
+                                      effective_ids=effective_ids)
+
+    def geteuid(self) -> int:
+        """Return the current process’s effective user id.
+        Availability: Unix."""
+        return self.filesystem.effective_user.uid
+
+    def seteuid(self, euid: int):
+        """Set the current process’s effective user id.
+         Availability: Unix."""
+        self.filesystem.effective_user.uid = euid
+
+    def getegid(self) -> int:
+        """Return the effective group id of the current process.
+        This corresponds to the “set id” bit on the file being
+        executed in the current process.
+
+        Availability: Unix."""
+        return self.filesystem.effective_user.gid
+
+    def setegid(self, egid: int):
+        """Set the current process’s effective group id.
+        Availability: Unix."""
+        self.filesystem.effective_user.gid = egid
+
+    def getuid(self) -> int:
+        """Return the current process’s real user id."""
+        return self.filesystem.user.uid
+
+    def setuid(self, uid: int):
+        """Set the current process’s user id."""
+        self.filesystem.user.uid = uid
+
+    def getgid(self) -> int:
+        """Return the real group id of the current process."""
+        return self.filesystem.user.gid
+
+    def setgid(self, gid: int):
+        """Set the current process’ group id."""
+        self.filesystem.user.gid = gid

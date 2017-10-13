@@ -24,6 +24,14 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * makedev
 * rename
 * access
+* getegid
+* setegid
+* geteuid
+* seteuid
+* getgid
+* setgid
+* getuid
+* setuid
 
 ## Not supported yet
 * mkfifo
@@ -51,9 +59,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * fsencode, fsdecode
 * fspath
 * get_exec_path
-* getegid, setegid
-* geteuid, seteuid
-* getgid, setgid
 * getgrouplist
 * getgroups, setgroups
 * getlogin
@@ -64,7 +69,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * getpriority, setpriority
 * getresuid, setresuid
 * getresgid, setresgid
-* getuid, setuid
 * getsid, setsid
 * initgroups
 * setregid

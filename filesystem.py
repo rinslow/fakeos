@@ -95,11 +95,15 @@ class AbstractFilesystem(ABC):
         pass
 
     @abstractmethod
-    def access(self, path: Path, mode: int):
+    def set_user(self, user: FakeUser):
+        pass
+
+    @abstractproperty
+    def effective_user(self) -> FakeUser:
         pass
 
     @abstractmethod
-    def set_user(self, user: FakeUser):
+    def access(self, path: Path, mode: int, effective_ids: bool):
         pass
 
 class FakeFilesystem(AbstractFilesystem):
@@ -113,6 +117,7 @@ class FakeFilesystem(AbstractFilesystem):
         self.directories = directories or list()
         self.files = files or list()
         self._user = user or Root()
+        self._effective_user = self._user.clone()
         self.operating_system = operating_system or Unix()
 
     def __getitem__(self, path: Path) -> FakeFileLikeObject:
@@ -241,17 +246,25 @@ class FakeFilesystem(AbstractFilesystem):
             if src in file_object.path.parents:
                 file_object.path = dst / file_object.path.relative_to(src)
 
-    def access(self, path: Path, mode: int):
+    def access(self, path: Path, mode: int, effective_ids: bool):
         """Test access for a file object."""
         if mode == 0:
             return self.has(path)
 
-        return self.user.can_access(self[path], action_mask=mode)
+        user = self.user if not effective_ids else self.effective_user
+        return user.can_access(self[path], action_mask=mode)
 
     def set_user(self, user: FakeUser):
         """Set the user."""
         self._user = user
 
+    @property
+    def effective_user(self) -> FakeUser:
+        """Return the effective user.
+
+        Note that effective users exist so there will be an answer to os's
+        functionality regarding effective uids and gids."""
+        return self._effective_user
 
 class FakeFilesystemWithPermissions(AbstractFilesystem):
     """A filesystem decorator implementing user permissions.
@@ -331,8 +344,14 @@ class FakeFilesystemWithPermissions(AbstractFilesystem):
     def has_file(self, path: Path) -> bool:
         return self.filesystem.has_file(path=path)
 
-    def access(self, path: Path, mode: int):
-        return self.filesystem.access(path=path, mode=mode)
+    def access(self, path: Path, mode: int, effective_ids: bool):
+        return self.filesystem.access(path=path,
+                                      mode=mode,
+                                      effective_ids=effective_ids)
 
     def set_user(self, user: FakeUser):
         return self.filesystem.set_user(user)
+
+    @property
+    def effective_user(self) -> FakeUser:
+        return self.filesystem.effective_user
