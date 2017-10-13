@@ -91,9 +91,16 @@ class AbstractFilesystem(ABC):
         pass
 
     @abstractproperty
-    def user(self):
+    def user(self) -> FakeUser:
         pass
 
+    @abstractmethod
+    def access(self, path: Path, mode: int):
+        pass
+
+    @abstractmethod
+    def set_user(self, user: FakeUser):
+        pass
 
 class FakeFilesystem(AbstractFilesystem):
     """I mock the behaviour of an entire filesystem."""
@@ -234,6 +241,17 @@ class FakeFilesystem(AbstractFilesystem):
             if src in file_object.path.parents:
                 file_object.path = dst / file_object.path.relative_to(src)
 
+    def access(self, path: Path, mode: int):
+        """Test access for a file object."""
+        if mode == 0:
+            return self.has(path)
+
+        return self.user.can_access(self[path], action_mask=mode)
+
+    def set_user(self, user: FakeUser):
+        """Set the user."""
+        self._user = user
+
 
 class FakeFilesystemWithPermissions(AbstractFilesystem):
     """A filesystem decorator implementing user permissions.
@@ -254,20 +272,20 @@ class FakeFilesystemWithPermissions(AbstractFilesystem):
         if not self.user.can_write(self[path]):
             raise PermissionError(path)
 
-        self.filesystem.chown(path=path, uid=uid, gid=gid)
+        return self.filesystem.chown(path=path, uid=uid, gid=gid)
 
     def chmod(self, path: Path, mode: int):
         if not self.user.can_write(self[path]):
             raise PermissionError(path)
 
-        self.filesystem.chmod(path=path, mode=mode)
+        return self.filesystem.chmod(path=path, mode=mode)
 
     def mkdir(self, path: Path, mode: int = 0o777):
         if self.has_directory(path.parent) and not self.user.can_write(
                 self[path.parent]):
             raise PermissionError(path.parent)
 
-        self.filesystem.mkdir(path=path, mode=mode)
+        return self.filesystem.mkdir(path=path, mode=mode)
 
     def listdir(self, path: Path):
         if not self.user.can_execute(self[path]):
@@ -279,13 +297,13 @@ class FakeFilesystemWithPermissions(AbstractFilesystem):
         if not self.user.can_write(self[path]):
             raise PermissionError(path)
 
-        self.filesystem.rmdir(path=path)
+        return self.filesystem.rmdir(path=path)
 
     def remove(self, path: Path):
         if not self.user.can_write(self[path]):
             raise PermissionError(path)
 
-        self.filesystem.remove(path=path)
+        return self.filesystem.remove(path=path)
 
     def rename(self, src: Path, dst: Path):
         if not self.user.can_write(self[src]):
@@ -295,13 +313,13 @@ class FakeFilesystemWithPermissions(AbstractFilesystem):
                 self[dst.parent]):
             raise PermissionError(dst)
 
-        self.filesystem.rename(src=src, dst=dst)
+        return self.filesystem.rename(src=src, dst=dst)
 
     def has(self, path: Path) -> bool:
         return self.filesystem.has(path=path)
 
     def makedirs(self, path: Path, mode: int = 0o777, exist_ok: bool = False):
-        self.filesystem.makedirs(path=path, mode=mode, exist_ok=exist_ok)
+        return self.filesystem.makedirs(path=path, mode=mode, exist_ok=exist_ok)
 
     @property
     def user(self):
@@ -312,3 +330,9 @@ class FakeFilesystemWithPermissions(AbstractFilesystem):
 
     def has_file(self, path: Path) -> bool:
         return self.filesystem.has_file(path=path)
+
+    def access(self, path: Path, mode: int):
+        return self.filesystem.access(path=path, mode=mode)
+
+    def set_user(self, user: FakeUser):
+        return self.filesystem.set_user(user)

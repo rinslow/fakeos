@@ -12,8 +12,14 @@ from fakeuser import FakeUser, Root
 
 class FakeOS(object):
     """I mock the 'os' module"""
-
     # pylint: disable=too-many-arguments
+
+    # Access-related
+    R_OK = 0b100
+    W_OK = 0b010
+    X_OK = 0b001
+    F_OK = 0b000
+
     def __init__(self, cwd: Path = None,
                  filesystem: AbstractFilesystem = None,
                  environment: FakeEnvironment = None,
@@ -171,7 +177,7 @@ class FakeOS(object):
         (usually the st_dev or st_rdev field from stat)."""
         return self.device(device).minor
 
-    def rename(self, src, dst):
+    def rename(self, src: str, dst: str):
         """Rename the file or directory src to dst. If dst is a directory,
          OSError will be raised. On Unix, if dst exists and is a file,
          it will be replaced silently if the user has permission. On Windows,
@@ -184,3 +190,26 @@ class FakeOS(object):
          If you want cross-platform overwriting of the destination,
          use replace()."""
         return self.filesystem.rename(Path(src), Path(dst))
+
+    def access(self, path: str, mode: int, effective_ids: bool = False,
+               follow_symlinks: bool = True) -> bool:
+        """Use the real uid/gid to test for access to path.
+        Note that most operations will use the effective uid/gid,
+        therefore this routine can be used in a suid/sgid environment to test
+        if the invoking user has the specified access to path.
+        mode should be F_OK to test the existence of path,
+        or it can be the inclusive OR of one or more of R_OK, W_OK, and X_OK
+        to test permissions. Return True if access is allowed, False if not.
+        See the Unix man page access(2) for more information.
+
+        This function can support specifying paths relative to directory
+        descriptors and not following symlinks.
+
+        If effective_ids is True, access() will perform its access checks using the
+        effective uid/gid instead of the real uid/gid.
+        effective_ids may not be supported on your platform;
+        you can check whether or not it is available using
+        os.supports_effective_ids. If it is unavailable,
+        using it will raise a NotImplementedError."""
+        # pylint: disable=unused-argument
+        return self.filesystem.access(path=Path(path), mode=mode)

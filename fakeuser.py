@@ -11,33 +11,31 @@ class FakeUser(object):
 
     def can_read(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can read the file"""
-        return self._can_access(mode=file_object.mode,
-                                file_gid=file_object.gid,
-                                file_uid=file_object.uid,
-                                action_bit=0b100)
+        return self.can_access(file_object, action_mask=0b100)
 
     def can_write(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can write to the file"""
-        return self._can_access(mode=file_object.mode,
-                                file_gid=file_object.gid,
-                                file_uid=file_object.uid,
-                                action_bit=0b010)
+        return self.can_access(file_object, action_mask=0b010)
 
     def can_execute(self, file_object: 'FakeFileLikeObject') -> bool:
         """Whether or not the user can execute the file"""
+        return self.can_access(file_object, action_mask=0b001)
+
+    def can_access(self, file_object: 'FakeFileLikeObject', action_mask: int) -> bool:
+        """Whether or not user can access the file using an action mask."""
         return self._can_access(mode=file_object.mode,
                                 file_gid=file_object.gid,
                                 file_uid=file_object.uid,
-                                action_bit=0b001)
+                                action_mask=action_mask)
 
-    def _can_access(self, mode: int, file_gid: int, action_bit: int,
+    def _can_access(self, mode: int, file_gid: int, action_mask: int,
                     file_uid: int) -> bool:
         """Whether or not the user can perform an action on the file"""
         owner, group, everyone = self._parse_mode(mode)
         return any([self.is_sudoer,
-                    owner & action_bit and file_uid == self.uid,
-                    group & action_bit and file_gid == self.gid,
-                    everyone & action_bit])
+                    owner & action_mask == action_mask and file_uid == self.uid,
+                    group & action_mask == action_mask and file_gid == self.gid,
+                    everyone & action_mask == action_mask])
 
     @staticmethod
     def _parse_mode(mode: int) -> Tuple[int, int, int]:

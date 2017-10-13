@@ -1,15 +1,19 @@
+import operator
 import os as _os
 
 from pathlib import Path
 from string import ascii_letters
+from itertools import chain, permutations
+
+from functools import reduce
 
 from fakeos import FakeOS
 from hypothesis import given, assume, example
-from hypothesis.strategies import text, sets, integers
+from hypothesis.strategies import text, sets, integers, lists, just
 
 from filesystem import FakeDirectory, FakeFile, FakeFilesystem, \
     FakeFilesystemWithPermissions
-from fakeuser import FakeUser
+from fakeuser import FakeUser, Root
 from unittest import TestCase
 
 from operating_system import Windows, Unix
@@ -235,12 +239,6 @@ class ChownCase(TestCase):
         assert os.filesystem[path].gid == gid
         assert os.filesystem[path].uid == uid
 
-    def test_chown_when_theres_no_permission_to_do_so(self):
-        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
-        os.mkdir("/", mode=0)  # Root only
-        with self.assertRaises(PermissionError):
-            os.chown('/', uid=3)
-
 
 class ChmodCase(TestCase):
     @given(text(), integers())
@@ -435,6 +433,166 @@ class RenameCase(TestCase):
         os.rename(path, path)
 
 
+class AccessCase(TestCase):
+    def test_access_when_root(self):
+        os = FakeOS(user=Root())
+        os.mkdir("/", mode=0o000)
+        for access_modifier in (os.X_OK, os.W_OK, os.R_OK, os.F_OK):
+            assert os.access("/", access_modifier)
+
+    def test_access_exist(self):
+        os = FakeOS()
+        os.mkdir("/")
+        assert os.access("/", os.F_OK) and not os.access("other", os.F_OK)
+
+    def test_access_when_owner(self):
+        os = FakeOS(user=FakeUser(gid=14, uid=42))
+        os.mkdir("r", mode=0o400)
+        os.mkdir("w", mode=0o200)
+        os.mkdir("x", mode=0o100)
+
+        os.mkdir("rw", mode=0o600)
+        os.mkdir("wx", mode=0o300)
+        os.mkdir("rx", mode=0o500)
+
+        os.mkdir("rwx", mode=0o700)
+        os.filesystem.set_user(FakeUser(gid=18, uid=42))
+
+        assert os.access("r", os.R_OK)
+        assert not os.access("r", os.W_OK)
+        assert not os.access("r", os.X_OK)
+
+        assert os.access("w", os.W_OK)
+        assert not os.access("w", os.R_OK)
+        assert not os.access("w", os.X_OK)
+
+        assert os.access("x", os.X_OK)
+        assert not os.access("x", os.R_OK)
+        assert not os.access("x", os.W_OK)
+
+        assert os.access("rw", os.R_OK)
+        assert os.access("rw", os.W_OK)
+        assert os.access("rw", os.R_OK | os.W_OK)
+        assert not os.access("rw", os.X_OK)
+        assert not os.access("rw", os.X_OK | os.W_OK)
+
+        assert os.access("wx", os.X_OK)
+        assert os.access("wx", os.W_OK)
+        assert os.access("wx", os.X_OK | os.W_OK)
+        assert not os.access("wx", os.R_OK)
+        assert not os.access("wx", os.X_OK | os.R_OK)
+
+        assert os.access("rx", os.X_OK)
+        assert os.access("rx", os.R_OK)
+        assert os.access("rx", os.X_OK | os.R_OK)
+        assert not os.access("rx", os.W_OK)
+        assert not os.access("rx", os.W_OK | os.R_OK)
+
+        assert os.access("rwx", os.R_OK)
+        assert os.access("rwx", os.X_OK)
+        assert os.access("rwx", os.F_OK)
+        assert os.access("rwx", os.R_OK | os.X_OK | os.W_OK)
+        assert os.access("rwx", os.X_OK | os.W_OK)
+
+    def test_access_when_everyone(self):
+        os = FakeOS(user=FakeUser(gid=-1, uid=-1))
+        os.mkdir("r", mode=0o004)
+        os.mkdir("w", mode=0o002)
+        os.mkdir("x", mode=0o001)
+
+        os.mkdir("rw", mode=0o006)
+        os.mkdir("wx", mode=0o003)
+        os.mkdir("rx", mode=0o005)
+
+        os.mkdir("rwx", mode=0o007)
+        os.filesystem.set_user(FakeUser(gid=0, uid=0))
+
+        assert os.access("r", os.R_OK)
+        assert not os.access("r", os.W_OK)
+        assert not os.access("r", os.X_OK)
+
+        assert os.access("w", os.W_OK)
+        assert not os.access("w", os.R_OK)
+        assert not os.access("w", os.X_OK)
+
+        assert os.access("x", os.X_OK)
+        assert not os.access("x", os.R_OK)
+        assert not os.access("x", os.W_OK)
+
+        assert os.access("rw", os.R_OK)
+        assert os.access("rw", os.W_OK)
+        assert os.access("rw", os.R_OK | os.W_OK)
+        assert not os.access("rw", os.X_OK)
+        assert not os.access("rw", os.X_OK | os.W_OK)
+
+        assert os.access("wx", os.X_OK)
+        assert os.access("wx", os.W_OK)
+        assert os.access("wx", os.X_OK | os.W_OK)
+        assert not os.access("wx", os.R_OK)
+        assert not os.access("wx", os.X_OK | os.R_OK)
+
+        assert os.access("rx", os.X_OK)
+        assert os.access("rx", os.R_OK)
+        assert os.access("rx", os.X_OK | os.R_OK)
+        assert not os.access("rx", os.W_OK)
+        assert not os.access("rx", os.W_OK | os.R_OK)
+
+        assert os.access("rwx", os.R_OK)
+        assert os.access("rwx", os.X_OK)
+        assert os.access("rwx", os.F_OK)
+        assert os.access("rwx", os.R_OK | os.X_OK | os.W_OK)
+        assert os.access("rwx", os.X_OK | os.W_OK)
+
+    def test_access_when_group(self):
+        os = FakeOS(user=FakeUser(gid=14, uid=42))
+        os.mkdir("r", mode=0o040)
+        os.mkdir("w", mode=0o020)
+        os.mkdir("x", mode=0o010)
+
+        os.mkdir("rw", mode=0o060)
+        os.mkdir("wx", mode=0o030)
+        os.mkdir("rx", mode=0o050)
+
+        os.mkdir("rwx", mode=0o070)
+        os.filesystem.set_user(FakeUser(gid=14, uid=56))
+
+        assert os.access("r", os.R_OK)
+        assert not os.access("r", os.W_OK)
+        assert not os.access("r", os.X_OK)
+
+        assert os.access("w", os.W_OK)
+        assert not os.access("w", os.R_OK)
+        assert not os.access("w", os.X_OK)
+
+        assert os.access("x", os.X_OK)
+        assert not os.access("x", os.R_OK)
+        assert not os.access("x", os.W_OK)
+
+        assert os.access("rw", os.R_OK)
+        assert os.access("rw", os.W_OK)
+        assert os.access("rw", os.R_OK | os.W_OK)
+        assert not os.access("rw", os.X_OK)
+        assert not os.access("rw", os.X_OK | os.W_OK)
+
+        assert os.access("wx", os.X_OK)
+        assert os.access("wx", os.W_OK)
+        assert os.access("wx", os.X_OK | os.W_OK)
+        assert not os.access("wx", os.R_OK)
+        assert not os.access("wx", os.X_OK | os.R_OK)
+
+        assert os.access("rx", os.X_OK)
+        assert os.access("rx", os.R_OK)
+        assert os.access("rx", os.X_OK | os.R_OK)
+        assert not os.access("rx", os.W_OK)
+        assert not os.access("rx", os.W_OK | os.R_OK)
+
+        assert os.access("rwx", os.R_OK)
+        assert os.access("rwx", os.X_OK)
+        assert os.access("rwx", os.F_OK)
+        assert os.access("rwx", os.R_OK | os.X_OK | os.W_OK)
+        assert os.access("rwx", os.X_OK | os.W_OK)
+
+
 class PermissionsCase(TestCase):
     def test_rmdir_when_theres_no_permission_to_do_so(self):
         os = FakeOS(user=FakeUser(uid=0, gid=0))
@@ -450,6 +608,24 @@ class PermissionsCase(TestCase):
 
     def test_chmod_when_theres_no_permission_to_do_so(self):
         os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
-        os.mkdir("/", mode=0o100)  # Root only
+        os.mkdir("/", mode=0o100)
         with self.assertRaises(PermissionError):
             os.chmod("/", mode=0o666)
+
+    def test_chown_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
+        os.mkdir("/", mode=0)
+        with self.assertRaises(PermissionError):
+            os.chown('/', uid=3)
+
+    def test_mkdir_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
+        os.mkdir("/", mode=0)
+        with self.assertRaises(PermissionError):
+            os.mkdir("/hello")
+
+    def test_listdir_when_theres_no_permission_to_do_so(self):
+        os = FakeOS(user=FakeUser(gid=2, uid=2, is_sudoer=False))
+        os.mkdir("/", mode=0o666)  # No execution allowed
+        with self.assertRaises(PermissionError):
+            os.listdir("/")
