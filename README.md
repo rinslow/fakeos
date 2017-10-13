@@ -23,9 +23,9 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * minor
 * makedev
 * rename
+* access
 
 ## Not supported yet
-* access
 * mkfifo
 * mknod
 * utime
