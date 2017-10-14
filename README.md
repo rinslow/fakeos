@@ -34,18 +34,20 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * setuid
 
 ## Not supported yet
+* walk, fwalk
+* stat, stat_float_times, statvfs, 
+* scandir
+* replace
+* renames
+* removedirs
+* sync
+* link, readlink, unlink
+* symlink
 * mkfifo
 * mknod
-* utime
-* symlink
-* sync
 * truncate
-* removedirs
-* renames
-* replace
-* scandir
-* stat, stat_float_times, statvfs, 
-* walk, fwalk
+* utime
+* uname
 * abort
 * _exit
 * execl, execle, execlp, execlpe, execv, execve, execvp, execvpe
@@ -55,7 +57,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * ctermid
 * confstr
 * cpu_count
-* link, readlink
 * fsencode, fsdecode
 * fspath
 * get_exec_path
@@ -75,7 +76,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * setreuid
 * strerror
 * umask
-* uname
 * unsetenv
 * open
 * pipe
