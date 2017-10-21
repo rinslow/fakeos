@@ -57,7 +57,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * chroot
 * ctermid
 * confstr
-* cpu_count
 * fsencode, fsdecode
 * fspath
 * get_exec_path
