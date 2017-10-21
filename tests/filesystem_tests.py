@@ -16,7 +16,7 @@ from filesystem import FakeDirectory, FakeFile, FakeFilesystem, \
 from fakeuser import FakeUser, Root
 from unittest import TestCase
 
-from operating_system import Windows, Unix
+from operating_system import FakeWindows, FakeUnix
 
 ILLEGAL_NAMES = ("", ".", "..")
 
@@ -387,7 +387,7 @@ class RenameCase(TestCase):
     def test_renaming_when_destination_exists_on_windows(self, old, new):
         assume(old != new)
 
-        os = FakeOS(operating_system=Windows())
+        os = FakeOS(operating_system=FakeWindows())
         os.mkdir(old)
         os.mkdir(new)
 
@@ -400,10 +400,10 @@ class RenameCase(TestCase):
     def test_renaming_when_destination_exists_on_unix(self, old, new, somefile):
         assume(old != new)
 
-        os = FakeOS(operating_system=Unix(),
+        os = FakeOS(operating_system=FakeUnix(),
                     filesystem=FakeFilesystem(files=[FakeFile(Path(old)),
                                                      FakeFile(Path(new))],
-                                              operating_system=Unix()))
+                                              operating_system=FakeUnix()))
 
         os.rename(old, new)
         os.filesystem[Path(new)]

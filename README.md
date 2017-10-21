@@ -32,6 +32,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * setgid
 * getuid
 * setuid
+* cpu_count
 
 ## Not supported yet
 * mkfifo
@@ -105,7 +106,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * sched_setaffinity, sched_getaffinity
 * getloadavg
 * sysconf
-* cpu_count
 * sysconf
 
 ## Nice to have 

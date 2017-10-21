@@ -2,19 +2,20 @@
 from abc import ABC
 
 
-class OperatingSystem(ABC):
+class FakeOperatingSystem(ABC):
     """An abstract operating system"""
     # pylint: disable=too-few-public-methods
-    pass
+    def __init__(self, cpu_count: int = 1):
+        self.cpu_count = cpu_count
 
 
-class Unix(OperatingSystem):
+class FakeUnix(FakeOperatingSystem):
     """Unix operating system"""
     # pylint: disable=too-few-public-methods
     pass
 
 
-class Windows(OperatingSystem):
+class FakeWindows(FakeOperatingSystem):
     """Windows operating system"""
     # pylint: disable=too-few-public-methods
     pass

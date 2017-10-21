@@ -5,4 +5,5 @@ from filesystem import (FakeFilesystem, FakeDirectory, FakeFile,
                         FakeFilesystemWithPermissions)
 from environment import FakeEnvironment
 from device import FakeDevice
-from fakeuser import FakeUser
+from fakeuser import FakeUser, Root
+from operating_system import FakeUnix, FakeWindows

@@ -6,7 +6,7 @@ from device import FakeDevice
 from environment import FakeEnvironment
 from filesystem import FakeFilesystem, FakeFilesystemWithPermissions, \
     AbstractFilesystem
-from operating_system import OperatingSystem, Unix
+from operating_system import FakeOperatingSystem, FakeUnix
 from fakeuser import FakeUser, Root
 
 
@@ -24,7 +24,7 @@ class FakeOS(object):
                  filesystem: AbstractFilesystem = None,
                  environment: FakeEnvironment = None,
                  user: FakeUser = None,
-                 operating_system: OperatingSystem = None,
+                 operating_system: FakeOperatingSystem = None,
                  fake_device: typing.Type[FakeDevice]=FakeDevice):
 
         self.cwd = cwd or Path(__file__)
@@ -34,7 +34,7 @@ class FakeOS(object):
         self.environment = environment or FakeEnvironment()
         self.device = fake_device
         self.user = user or Root()
-        self.operating_system = operating_system or Unix()
+        self.operating_system = operating_system or FakeUnix()
 
     def mkdir(self, path: str, mode: int = 0o777):
         """Create a directory named path with numeric mode mode.
@@ -254,3 +254,10 @@ class FakeOS(object):
     def setgid(self, gid: int):
         """Set the current process’ group id."""
         self.filesystem.user.gid = gid
+
+    def cpu_count(self):
+        """Return the number of CPUs in the system.
+        Returns None if undetermined. This number is not equivalent to the
+        number of CPUs the current process can use. The number of usable CPUs
+        can be obtained with len(os.sched_getaffinity(0))"""
+        return self.operating_system.cpu_count

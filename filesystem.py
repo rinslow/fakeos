@@ -3,7 +3,7 @@ import typing
 from abc import ABC, abstractmethod, abstractproperty
 from pathlib import Path
 
-from operating_system import OperatingSystem, Unix, Windows
+from operating_system import FakeOperatingSystem, FakeUnix, FakeWindows
 from fakeuser import FakeUser, Root
 
 
@@ -111,14 +111,14 @@ class FakeFilesystem(AbstractFilesystem):
     def __init__(self,
                  directories=None,
                  files=None,
-                 operating_system: OperatingSystem = None,
+                 operating_system: FakeOperatingSystem = None,
                  user: FakeUser = None):
 
         self.directories = directories or list()
         self.files = files or list()
         self._user = user or Root()
         self._effective_user = self._user.clone()
-        self.operating_system = operating_system or Unix()
+        self.operating_system = operating_system or FakeUnix()
 
     def __getitem__(self, path: Path) -> FakeFileLikeObject:
         if isinstance(path, str):
@@ -237,7 +237,7 @@ class FakeFilesystem(AbstractFilesystem):
         if self.has_directory(dst):
             raise FileExistsError(dst)
 
-        if isinstance(self.operating_system, Windows) and self.has(dst):
+        if isinstance(self.operating_system, FakeWindows) and self.has(dst):
             raise FileExistsError(dst)
 
         self[src].path = dst
