@@ -33,6 +33,7 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * getuid
 * setuid
 * cpu_count
+* uname
 
 ## Not supported yet
 * walk, fwalk
@@ -48,7 +49,6 @@ fakeos lets you run blazing fast unit-tests without using your operating systems
 * mknod
 * truncate
 * utime
-* uname
 * abort
 * _exit
 * execl, execle, execlp, execlpe, execv, execve, execvp, execvpe

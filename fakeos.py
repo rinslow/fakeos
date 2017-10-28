@@ -255,9 +255,33 @@ class FakeOS(object):
         """Set the current process’ group id."""
         self.filesystem.user.gid = gid
 
-    def cpu_count(self):
+    def cpu_count(self) -> int:
         """Return the number of CPUs in the system.
         Returns None if undetermined. This number is not equivalent to the
         number of CPUs the current process can use. The number of usable CPUs
         can be obtained with len(os.sched_getaffinity(0))"""
         return self.operating_system.cpu_count
+
+    def uname(self):
+        """Returns information identifying the current operating system.
+        The return value is an object with five attributes:
+            sysname - operating system name
+            nodename - name of machine on network (implementation-defined)
+            release - operating system release
+            version - operating system version
+            machine - hardware identifier
+
+        For backwards compatibility, this object is also iterable,
+        behaving like a five-tuple containing sysname, nodename, release,
+        version, and machine in that order.
+
+        Some systems truncate nodename to 8 characters or to the leading
+        component; a better way to get the hostname is socket.gethostname()
+        or even socket.gethostbyaddr(socket.gethostname()).
+
+        Availability: recent flavors of Unix.
+
+        Changed in version 3.3: Return type changed from a tuple to a
+        tuple-like object with named attributes.
+        """
+        return self.operating_system.uname()
